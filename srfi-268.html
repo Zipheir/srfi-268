@@ -23,7 +23,13 @@ SPDX-License-Identifier: MIT
   span.proc-def { font-weight: bold }
   code.function { font-weight: bold }
   p.synopsis { background-color: #D8ffD8 }
-  pre { font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace; }
+  pre { font-family: ;Noto Mono", "DejaVu Sans Mono", "Menlo", "Consolas", monospace; }
+  @media print {
+    pre.keep-together {
+      page-break-inside: avoid;
+      break-inside: avoid; /* Modern property */
+    }
+}
 </style></head>
   <body>
     <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>268: Multidimensional Array Literals</h1>
@@ -41,8 +47,8 @@ SPDX-License-Identifier: MIT
 
 <h2 id="abstract">Abstract</h2>
 
-    <p>This is a specification of a lexical syntax
-for multi-dimensional arrays. It is a modest alteration of
+<p>This is a specification of a lexical syntax
+for multi-dimensional arrays. Textually it is an alteration of
 <a href="https://srfi.schemers.org/srfi-163/srfi-163.html">SRFI 163</a>, which
 is an extension of the
 <a href="https://www.lispworks.com/documentation/HyperSpec/Body/02_dhl.htm">
@@ -54,13 +60,14 @@ It can be used in conjunction with
 <a href="https://srfi.schemers.org/srfi-25">SRFI 25</a>,
 <a href="https://srfi.schemers.org/srfi-122">SRFI 122</a>,
 or <a href="https://srfi.schemers.org/srfi-231">SRFI 231</a>.
-There are recommendations for output formatting
-and a suggested <code>format-array</code> procedure.</p>
+There are recommendations for output formatting,
+<code>read-array</code> and <code>write-array</code>
+procedures, and a suggested
+<code>format-array</code> procedure.</p>
 
 <h2 id="rationale">Rationale</h2>
 
-    <p>
-It is desirable to have a lexical syntax
+<p>It is desirable to have a lexical syntax
 for reading and writing multi-dimensional arrays,
 so they can not only appear as literal values in code,
 but also be read from and written to data files.
@@ -75,53 +82,54 @@ Various Scheme extensions have been proposed.
 is one proposal, but it does not handle non-zero lower bounds,
 and its type-specifier syntax is stylistically
 incompatible with the literals proposed
-for uniform vectors in SRFIs 4 and 160.
+for uniform vectors in SRFIs 4 and 160.</p>
 
 <h2 id="specification">Specification</h2>
 
 <h3 id="reader-syntax">Reader syntax</h3>
 
 <p>An array literal consists of the following parts:
-an <code class="literal">#</code>
-immediately followed by an optional non-negative integer literal
-representing the number of dimensions,
+an <code class="literal">#a</code>
+or <code class="literal">#A</code>
 immediately followed by a <var class="non-terminal">tag</var>
 that specifies the type of the elements of the array.
 An implementation that supports the literal syntax of
 <a href="https://srfi.schemers.org/srfi-4/srfi-4.html">SRFI 4</a>
 or <a href="https://srfi.schemers.org/srfi-160/srfi-160.html">SRFI 160</a>
-should allow the <var>TAG</var> or <var>@</var> from those specifications
-as a <var class="non-terminal">tag</var>.
+should allow the <var>TAG</var> or <var>@</var>
+from those specifications as a <var class="non-terminal">tag</var>
+case-insensitively.
+This SRFI also allows the tags <var>f16</var> and <var>char</var>
+for 16-bit float arrays and character arrays.
 If the tag is omitted,
 the array may contain elements of any type.</p>
 
 <p>After the <var class="non-terminal">tag</var>
-comes the <var class="non-terminal">lbounds</var>,
-an optional list whose elements are integer literals
-giving the lower bounds of each dimension.
+comes the <var class="non-terminal">bounds</var>,
+a list each of whose elements is either an integer literal
+giving the upper bound of a dimension 
+(in which case the lower bound is 0), or a list of two
+integer literals giving the lower and upper bounds.
 This is followed by a <var class="non-terminal">datum</var>
 containing array elements organized into dimensions using parentheses.
-The <var class="non-terminal">datum</var> contains the elements in a nested-list format:
+The <var class="non-terminal">datum</var>
+contains the elements in a nested-list format:
 a one-dimensional array uses a single list,
 a two-dimensional array uses a list of lists, and so on.
 The elements are in lexicographic order. A zero-dimensional
-array is followed by a datum of any type.
-The <var class="non-terminal">lbounds</var>
-and the number of dimensions are mutually exclusive.
-</p>
+array is followed by a datum of any type that the
+<var>tag</var> supports.</p>
 
-<p>If all the lower bounds are 0,
-the <var class="non-terminal">lbounds</var> may be omitted.
-In this case, the number of dimensions is required:
-it would be impossible to tell
-whether <code>#a (1 2)</code>
+<p>The number of dimensions is inferred
+from the length of <var class="non-terminal">bounds</var>
+it would be impossible from the
+<var class="non-terminal">datum</var> alone to tell
+<code>(1 2)</code>
 represents a one-dimensional array with integer elements,
-or a zero-dimensional array whose sole element is a list.
-The <var class="non-terminal">lbounds</var>
-and the number of dimensions are mutually exclusive.</p>
+or a zero-dimensional array whose sole element is a list.</p>
 
 <p>Whitespace is permitted before either the lower bounds or
-the list of array elements.
+the list of array elements or both.
 A single space before the <var class="replaceable">datum</var>
 is recommended style, even if the <var class="replaceable">datum</var> starts
 with a <var class="non-terminal">delimiter</var>.
@@ -129,30 +137,29 @@ with a <var class="non-terminal">delimiter</var>.
 <code>#0a</code>.)
 </p>
 
-<p>For example <code>#2au32((10 11) (20 21))</code>
-is a 2x2 array of 32-bit unsigned integers. As another example,
-<code class="literal">#a((0 2) (0 3)) ((12 13) (21 22 23))</code>
-is a 2-dimensional array (a matrix)
-whose indexes are rows 0 to 1 and columns 0 to 2.
-It could be pretty-printed (using the non-normative <code>format-array</code>
-helper function below):
-</p>
+<p>Here is an EBNF grammar for array literals (ignoring
+case and whitespace):</p>
 
-<pre class="screen">
-#a═══════╗
-║11│12│13║
-╟──┼──┼──╢
-║21│22│23║
-╚══╧══╧══╝
+<pre>
+array-literal ::= "#a" bounds datum
+bounds = "(" bound* ")"
+bound := integer | "(" integer* ")
+integer := digit+
 </pre>
 
-<p>Here are more examples:
+<p>Here are some examples. A 2x2 array of 32-bit unsigned integers:
 </p>
 
-<p>A uniform u32 array with two dimensions and index ranges 2..3 and 3..4 inclusive:
+<pre><code>#au32(2 2) ((10 11) (20 21))</code></pre>
+
+<p>Another way to write the same array:</p>
+
+<pre><code>#au32((0 2) (0 2)) ((10 11) (20 21))</code></pre>
+
+<p>A different u32 array with index ranges 2..3 and 3..4 inclusive:
 </p>
 
-<pre class="screen">#au32((2 4) (3 5)) ((a b) (c d))
+<pre>#au32((2 4) (3 5)) ((a b) (c d))
 </pre>
 
 <p>Some zero-dimensional arrays:</p>
@@ -165,9 +172,15 @@ helper function below):
 <p>Some empty arrays:</p>
 
 <pre>
-#1a ()
-#2a (())
+#a(1 0) ()
+#2a((2 1) (2 3) (() ())
 </pre>
+
+<h4><code>read-array </code> [ <var>input-port</var> ]</h4>
+
+<blockquote>Reads an array literal from <var>input-port</var>
+(by default the value of <code>(current-input-port)</code>)
+and returns the corresponding array.</blockquote>
 
 <p><em>Possible extension:</em>
 It might make source code more readable if it could contain
@@ -183,9 +196,14 @@ Then recursively <code>read</code> each element.
 
 <h3 id="output">Output</h3>
 
-<p>When an array is printed with the <code>write</code> function,
-the result <em>should</em> be an <em class="replaceable">array-literal</em>.
-A single space <em>should</em> be printed
+<h4><code>write-array </code> <var>array</var> [ <var>output-port</var> ]</h4>
+
+<blockquote>Writes the array as an array literal to <var>output-port</var>
+(by default the value of <code>(current-output-port)</code>).</blockquote>
+<p>When the <code>write</code>, <code>write-shared</code>,
+or <code>write-simple</code> procedures are asked
+to write an array, the output is the same as <code>write-array</code>,
+A single space should be printed
 before the <var class="replaceable">datum</var>.
 </p>
 
@@ -194,18 +212,20 @@ Printing with <code>display</code> <em>may</em> format the array in the same way
 <em>or</em> in some more readable way, perhaps by
 using the <code>format-array</code> procedure.
 </p>
+ 
+<h4><code><span class="proc-def">format-array </span></code><var>array</var> [ <var>port</var> ]</h4>
 
-<h3 id="format-array">The format-array utility procedure (non-normative)</h3>
-
-<p class="synopsis"><code>(<span class="proc-def">format-array</span></code><var>value</var> [<var>port</var>]<code>)</code></p>
-<blockquote class="blockquote">Produce a nice <q>pretty</q> display for <em class="replaceable"><code>value</code></em>, which is usually an array.
-Using <a href="https://unicode.org/charts/PDF/U2500.pdf">Unicode "box drawing" characters</a> is suggested but not required.</blockquote><p>
+<blockquote class="blockquote">This is an optional procedure
+that produces a nice <q>pretty</q> display for
+<em class="replaceable"><code>array</code></em>.
+Using <a href="https://unicode.org/charts/PDF/U2500.pdf">Unicode "box drawing" characters</a>
+is suggested but not required.</blockquote><p>
 If <var>port</var> is an output port, the formatted output is written into
 that port.
 Otherwise, <var>port</var> must be a boolean
 (one of <code>#t</code> or <code>#f</code>).
-If the <var>port</var> is <code>#t</code>, output is to the
-<code>(current-output-port)</code>.
+If the <var>port</var> is <code>#t</code>, output is to
+ the value of <code>(current-output-port)</code>.
 If the <var>port</var> is <code>#f</code> or no <var>port</var> is specified,
 the output is returned as a string.
 If the port is specified and is <code>#t</code> or an output-port,
@@ -217,88 +237,49 @@ empty arrays are written using empty boxes.</p>
 
 <p>The top line includes
 the <var class="non-terminal">tag</var>
-and the number of dimensions or
-the <var class="non-terminal">lbounds</var>,
+and the <var class="non-terminal">bounds</var>
+if there is room for them
 possibly in abbreviated form.
 </p>
-
-<pre class="screen"><strong class="userinput"><code>
-(define arr
-  #a(1 1)
-    ((#a(2 2)
-       ((1 2) (3 4))
-        9
-        #a(2 2)
-          ((3 4) (5 6)))
-          (#1a (42 43)
-           #1a (8 7 6)
-           #2a ((90 91) (100 101)))))
-
-(format-array arr)</code></strong> ⇨
-#a(1 1)═══════════════════╗
-║#2a═╗  │      9│#2a═╗    ║
-║║1│2║  │       │║3│4║    ║
-║╟─┼─╢  │       │╟─┼─╢    ║
-║║3│4║  │       │║5│6║    ║
-║╚═╧═╝  │       │╚═╧═╝    ║
-╟───────┼───────┼─────────╢
-║#a═══╗│#a═════│#2a══════╗║
-║║42│43║│║8│7│6║│║ 90│ 91║║
-║╚══╧══╝│╚═╧═╧═╝│╟───┼───╢║
-║       │       │║100│101║║
-║       │       │╚═══╧═══╝║
-╚═══════╧═══════╧═════════╝
-</pre>
 
 <p>If the number of dimensions is more than 2, then each "layer"
 is printed separated by double lines.
 </p>
 
-<pre class="screen"><strong class="userinput"><code>
-#af32(2 3 4)
-  (((1 2 3 4) (5 6 7 8))
-   ((9 10 11 12) (13 14 15 16))
-   ((17 18 19 20) (21 22 23 24)))</code></strong>
+<p>The literal <code class="literal">#a((0 2) (0 3)) ((12 13) (21 22 23))</code>
+could be formatted as:</p>
 
-f32(2 3 4)══╗
-║ 1│ 2│ 3│ 4║
-╟──┼──┼──┼──╢
-║ 5│ 6│ 7│ 8║
-╠══╪══╪══╪══╣
-║ 9│10│11│12║
-╟──┼──┼──┼──╢
-║13│14│15│16║
-╠══╪══╪══╪══╣
-║17│18│19│20║
-╟──┼──┼──┼──╢
-║21│22│23│24║
-╚══╧══╧══╧══╝
+<pre class="keep-together">
+#a═══════╗
+║11│12│13║
+╟──┼──┼──╢
+║21│22│23║
+╚══╧══╧══╝
 </pre>
 
-<p>Implementations may extend <code>format-array</code> so it can be called
-with more than 2 arguments, but this is not specified here.
-For example, implementations could allow a formatting procedure or combinator.
-An implementation that supports
-<a href="https://srfi.schemers.org/srfi-48/srfi-48.html">SRFI 48 <code>format</code></a>
-<em>may</em> support an optional <var>element-format</var> parameter,
-which would be interpreted as a format string used for each array element.
-A possible  implementation is illustrated here:
-</p>
+<p>and the literal</p>
+<pre>#af32(2 3 4)
+  (((1 2 3 4) (5 6 7 8))
+   ((9 10 11 12) (13 14 15 16))
+   ((17 18 19 20) (21 22 23 24)))
+</pre>
 
-<pre class="screen"><strong class="userinput"><code>(format-array arr "~4,2f")</code></strong> ⇨
-#2a@1:3@1:4═══╤════════════════╤═══════════════╗
-║#2a:2:2═══╗  │            9.00│#2a:2:2═══╗    ║
-║║1.00│2.00║  │                │║3.00│4.00║    ║
-║╟────┼────╢  │                │╟────┼────╢    ║
-║║3.00│4.00║  │                │║5.00│6.00║    ║
-║╚════╧════╝  │                │╚════╧════╝    ║
-╟─────────────┼────────────────┼───────────────╢
-║#1a:2═╤═════╗│#2a:1:3════╤═══╗│#2a:2:2═══════╗║
-║║42.00│43.00║│║8.00│7.00│6.00║│║ 90.00│ 91.00║║
-║╚═════╧═════╝│╚════╧════╧════╝│╟──────┼──────╢║
-║             │                │║100.00│101.00║║
-║             │                │╚══════╧══════╝║
-╚═════════════╧════════════════╧═══════════════╝
+<p>could be formatted as</p>
+
+<pre class="keep-together">
+#f32(2 3 4)═════════╗
+║ 1.0│ 2.0│ 3.0│ 4.0║
+╟────┼────┼────┼────╢
+║ 5.0│ 6.0│ 7.0│ 8.0║
+╠════╪════╪════╪════╣
+║ 9.0│10.0│11.0│12.0║
+╟────┼────┼────┼────╢
+║13.0│14.0│15.0│16.0║
+╠═──═╪══──╪═──═╪═──═╣
+║17.0│18.0│19.0│20.0║
+╟══──┼─══─┼──══┼─══─╢
+║21.0│22.0│23.0│24.0║
+╚════╧════╧════╧════╝
 </pre>
 
 <h2 id="implementation">Implementation</h2>
