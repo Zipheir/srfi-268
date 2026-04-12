@@ -82,6 +82,9 @@
     ;; It would be easier to use list*->array to build the new
     ;; array here, but we need finer-grained control over the
     ;; interval.
+    ;; Thus it seems to be necessary to pad & flatten the nested
+    ;; contents and then pass them to list->array (which, unlike
+    ;; list*->array, takes an interval).
     (define (build-array interval storage-class contents)
       (let* ((A (make-specialized-array interval storage-class))
              (set-entry! (array-setter A)))
