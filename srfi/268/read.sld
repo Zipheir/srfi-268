@@ -1,4 +1,4 @@
-(define-library (srfi 268)
+(define-library (srfi 268 read)
   (export read-array)
   (import (scheme base)
 	  (scheme case-lambda)
@@ -47,18 +47,6 @@
 	     (string-append "read-array: " msg)
 	     irritants))
 
-    (define (read-array-from-port port)
-      (check-arg "read-array" input-port? port)
-      (let* ((class (parse-tag port))
-	     (bounds (parse-bounds port))
-	     (contents (read port)))
-	(unless (list? contents)
-	  (error "read-array: invalid array contents"
-		 contents))
-	(build-array (apply make-interval bounds)
-		     class
-		     contents)))
-
     ;; Parse an array tag from *port* and return an appropriate
     ;; storage class.
     (define (class-symbol->storage-class sym)
@@ -67,16 +55,29 @@
 
     (define (parse-tag)
       (consume-tag-prefix)
-      (let ((class-sym (read)))
-        (unless (symbol? class-sym)
-	  (parsing-error "invalid array tag" class-sym))
-        (class-symbol->storage-class class-sym)))
+      (if (eqv? #\( (peek-char))  ; elided type?
+          generic-storage-class
+          (let ((class-sym (read)))
+            (unless (symbol? class-sym)
+              (parsing-error "invalid array tag" class-sym))
+            (class-symbol->storage-class class-sym))))
 
     (define (parse-bounds)
       (let ((bounds (read)))
 	(unless (list? bounds)
 	  (parsing-error "invalid bounds spec" bounds))
-	(map list->vector bounds)))
+	(map (lambda (b)
+	       (check-bounds b)
+	       (cond ((integer? b) (vector 0 b))  ; upper bound only
+		     ((list? b) (list->vector b))))
+	     bounds)))
+
+    (define (check-bounds b)
+      ;; Just check if *b* has the right type and leave the numerical
+      ;; checks to 'make-interval'.
+      (unless (or (integer? b)
+	          (and (list? b) (= 2 (length b))))
+	(parsing-error "invalid bounds spec element" b)))
 
     ;; It would be easier to use list*->array to build the new
     ;; array here, but we need finer-grained control over the
@@ -93,6 +94,14 @@
          (check-arg "read-array" input-port? port)
          (parameterize ((current-input-port port))
            (read-array)))
-        (() (read-array-from-port (current-input-port)))))
+        (()
+         (let* ((class (parse-tag))
+                (bounds (parse-bounds))
+                (contents (read)))
+           (unless (list? contents)
+             (parsing-error "invalid array contents" contents))
+           (build-array (apply make-interval bounds)
+                        class
+                        contents)))))
 
   ))
