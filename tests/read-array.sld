@@ -1,6 +1,7 @@
 (define-library (tests read-array)
   (export run-tests)
   (import (scheme base)
+	  (srfi 1)
           (srfi 64)
           (srfi 231)
           (srfi 268 read)
@@ -43,5 +44,36 @@
 	(test-assert "2d generic array, mixed bound types"
 	  (array=? (list*->array 2 '((a b) (c d)))
 		   (string->array "#a((0 2) 2) ((a b) (c d))")))
+	(test-assert "2x2x3 u16 array"
+	  (array=? (list->array (make-interval '#(2 2 3))
+				(iota 12)
+				u16-storage-class)
+		   (string->array
+		    "#au16(2 2 3) (((0 1 2) (3 4 5))
+				   ((6 7 8) (9 10 11)))")))
+	(test-assert "2x2x3 u16 array, nonzero lower bounds"
+	  (array=? (list->array (make-interval '#(1 2 3)
+					       '#(3 4 6))
+				(iota 12)
+				u16-storage-class)
+		   (string->array
+		    "#Au16((1 3) (2 4) (3 6))
+			  (((0 1 2) (3 4 5))
+			   ((6 7 8) (9 10 11)))")))
+
+	;;; Erroneous syntax
+
+	(test-error "bad tag (1)" #t
+	  (string->array "%a(3) (1 2 3)"))
+	(test-error "bad tag (2)" #t
+	  (string->array "#b(3) (1 2 3)"))
+	(test-error "bad bounds (1)" #t
+	  (string->array "#a(3.3) (1 2 3)"))
+	(test-error "bad bounds (2)" #t
+	  (string->array "#au16(Z) (1 2 3)"))
+	(test-error "bad bounds (3)" #t
+	  (string->array "#a((3 0)) (1 2 3)"))
+	(test-error "junk characters between bounds & datum" #t
+	  (string->array "#a(3)Z(1 2 3)"))
 	))
     ))
