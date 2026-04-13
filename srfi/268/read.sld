@@ -1,8 +1,11 @@
 (define-library (srfi 268 read)
-  (export read-array)
+  (export read-array
+          flatten-contents)
   (import (scheme base)
 	  (scheme case-lambda)
 	  (scheme read)
+          (scheme write)
+          (only (srfi 1) append-map)
           (srfi 231)
           )
   (begin
@@ -86,10 +89,30 @@
     ;; contents and then pass them to list->array (which, unlike
     ;; list*->array, takes an interval).
     (define (build-array interval storage-class contents)
-      (let* ((A (make-specialized-array interval storage-class))
-             (set-entry! (array-setter A)))
-	;; TODO: set all entries from *contents*
-	A))
+      (list->array interval
+                   (flatten-contents (interval-dimension interval)
+                                     contents)
+                   storage-class))
+
+    (define (flatten ls d)
+      (if (and (positive? d) (pair? ls) (pair? (car ls)))
+          (append-map (lambda (x) (flatten x (- d 1))) ls)
+          ls))
+
+    (define (flatten-contents dimension nested-ls)
+      (display "dimension is ")
+      (display dimension)
+      (newline)
+      (let lp ((ls nested-ls) (d dimension))
+        (cond
+         ((positive? d)
+          (if (null? ls)
+              (lp '() (- d 1))
+              (lp (car ls) (- d 1))))
+         (else
+          (if (zero? dimension)
+              (list nested-ls)
+              (flatten nested-ls (- dimension 1)))))))
 
     (define read-array
       (case-lambda
