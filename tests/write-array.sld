@@ -44,5 +44,9 @@
 	  (array-wr-equals?
 	   (list->array (make-interval '#(1 3) '#(4 6))
 			'(a b c d e f g h i))))
+	(test-assert "0d generic array"
+	  (array-wr-equals? (list*->array 0 1)))
+	(test-assert "0d char array"
+	  (array-wr-equals? (list*->array 0 #\a char-storage-class)))
       ))
   ))
