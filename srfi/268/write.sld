@@ -68,7 +68,7 @@
 	(display ")")))
 
     (define (write-contents array)
-      (display (srfi-231:array->list* array)))
+      (write (srfi-231:array->list* array)))
 
     (define write-array
       (case-lambda
