@@ -89,6 +89,22 @@
 	  (array=? (list->array (make-interval '#(4) '#(7))
 				'(1 2 3))
 		   (string->array "#a((4 7)) (1 2 3)")))
+	(test-assert "1d generic array, bounds in binary"
+	  (array=? (list->array (make-interval '#(#b100) '#(#b111))
+				'(1 2 3))
+		   (string->array "#a((#b100 #b111)) (1 2 3)")))
+	(test-assert "1d generic array, explicit decimal radix in bounds"
+	  (array=? (list->array (make-interval '#(4) '#(7))
+				'(1 2 3))
+		   (string->array "#a((#d4 #d7)) (1 2 3)")))
+	(test-assert "1d generic array, bounds in octal"
+	  (array=? (list->array (make-interval '#(#o4) '#(#o7))
+				'(1 2 3))
+		   (string->array "#a((#o4 #o7)) (1 2 3)")))
+	(test-assert "1d generic array, bounds in hex"
+	  (array=? (list->array (make-interval '#(#x4) '#(#x7))
+				'(1 2 3))
+		   (string->array "#a((#x4 #x7)) (1 2 3)")))
 	(test-assert "2d generic array"
 	  (array=? (list*->array 2 '((a b) (c d)))
 		   (string->array "#A(2 2) ((a b) (c d))")))
