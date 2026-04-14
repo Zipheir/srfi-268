@@ -153,8 +153,6 @@
          (let*-values (((class) (parse-tag))
                        ((lowers uppers) (parse-bounds))
                        ((contents) (read)))
-           (unless (list? contents)
-             (parsing-error "invalid array contents" contents))
            (build-array (srfi-231:make-interval lowers uppers)
                         class
                         contents)))))
