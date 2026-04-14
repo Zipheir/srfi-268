@@ -94,5 +94,7 @@
 	  (array-wr-equals? (list*->array 0 1)))
 	(test-assert "0d char array"
 	  (array-wr-equals? (list*->array 0 #\a char-storage-class)))
+	(test-assert "2d empty array"
+	  (array-wr-equals? (list->array (make-interval '#(1 0)) '())))
       ))
   ))
