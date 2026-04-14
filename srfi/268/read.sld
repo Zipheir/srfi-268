@@ -1,3 +1,6 @@
+;;; SPDX-FileCopyrightText: 2026 John Cowan, Per Bothner, Wolfgang Corcoran-Mathe
+;;; SPDX-License-Identifier: MIT
+;;;
 ;;; The contents-list parsing code was snarfed from Bradley Lucier's
 ;;; SRFI 231 sample implementation.
 (define-library (srfi 268 read)

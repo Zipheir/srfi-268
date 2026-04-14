@@ -1,3 +1,5 @@
+;;; SPDX-FileCopyrightText: 2026 John Cowan, Per Bothner, Wolfgang Corcoran-Mathe
+;;; SPDX-License-Identifier: MIT
 (define-library (tests write-array)
   (export run-tests)
   (import (scheme base)

@@ -1,3 +1,5 @@
+;;; SPDX-FileCopyrightText: 2026 John Cowan, Per Bothner, Wolfgang Corcoran-Mathe
+;;; SPDX-License-Identifier: MIT
 (define-library (srfi 268 write)
   (export write-array)
   (import (scheme base)
